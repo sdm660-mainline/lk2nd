@@ -1,0 +1,19 @@
+// SPDX-License-Identifier: BSD-3-Clause
+
+#include <skeleton64.dtsi>
+#include <lk2nd.dtsi>
+
+/ {
+	model = "Xiaomi Redmi Note 7";
+	qcom,msm-id = <QCOM_ID_SDM660 0x0>; // qcom,msm-id = <0x13d 0x0>;
+	/* board-id & pmic-id copied from downstream dt */
+	qcom,board-id = <0x20008 0x0>;
+	qcom,pmic-id = <0x1001b 0x101011a 0x0 0x0>,
+			<0x1001b 0x201011a 0x0 0x0>,
+			<0x1001b 0x102001a 0x0 0x0>;
+};
+
+&lk2nd {
+	model = "Xiaomi Redmi Note 7";
+	compatible = "xiaomi,lavender";
+};
