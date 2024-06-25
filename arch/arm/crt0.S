@@ -143,6 +143,12 @@ warm_boot_tag:
 #endif
 
 .Lstack_setup:
+	/* Lexx: maybe try soft reset here - write 0 to MPM_PS_HOLD reg (0x10ac000) */
+	/*mov	r3, #0xc000
+	movt	r3, #0x10a
+	mov	r2, #0x0
+	str	r2, [r3,#0x0]*/
+
 	/* set up the stack for irq, fiq, abort, undefined, system/user, and lastly supervisor mode */
 	mrs     r0, cpsr
 	bic     r0, r0, #0x1f

@@ -114,6 +114,9 @@ void kmain(void)
 	dprintf(SPEW, "initializing timers\n");
 	timer_init();
 
+	dprintf(SPEW, "starting thread bootstrap2\n");
+	while(1) { } // freeze here
+
 #if (!ENABLE_NANDWRITE)
 	// create a thread to complete system initialization
 	dprintf(SPEW, "creating bootstrap completion thread\n");

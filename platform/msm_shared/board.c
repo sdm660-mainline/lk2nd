@@ -69,8 +69,10 @@ static void platform_detect(void)
 
 	ret = smem_read_alloc_entry_offset(SMEM_BOARD_INFO_LOCATION,
 						   &format, sizeof(format), 0);
-	if (ret)
+	if (ret) {
+		dprintf(INFO, "board: platform_detect(): failed to read SMEM_BOARD_INFO_LOCATION\n");
 		return;
+	}
 
 	/* Extract the major & minor version info,
 	 * Upper two bytes: major info
@@ -78,6 +80,7 @@ static void platform_detect(void)
 	 */
 	format_major = (format & 0xffff0000) >> 16;
 	format_minor = format & 0x0000ffff;
+	dprintf(SPEW, "board: platform_detect(): format: %u.%u\n", format_major, format_minor);
 
 	if (format_major == 0x0)
 	{
@@ -289,6 +292,16 @@ static void platform_detect(void)
 			board.chip_serial = board_info_v11.chip_serial;
 			board.num_pmics = board_info_v11.num_pmics;
 			board.pmic_array_offset = board_info_v11.pmic_array_offset;
+
+			/* dump */
+			dprintf(SPEW, " platform: %u (%x)\n", board.platform, board.platform);
+			dprintf(SPEW, " platform_version: %u (%x)\n", board.platform_version, board. platform_version);
+			dprintf(SPEW, " platform_hw: %u (%x)\n", board.platform_hw, board.platform_hw);
+			dprintf(SPEW, " platform_subtype: %u (%x)\n", board.platform_subtype, board.platform_subtype);
+			dprintf(SPEW, " target: %u (%x)\n", board.target, board.target);
+			dprintf(SPEW, " foundry_id: %u (%x)\n", board.foundry_id, board.foundry_id);
+			dprintf(SPEW, " chip_serial: %u (%x)\n", board.chip_serial, board.chip_serial);
+			dprintf(SPEW, " num_pmics: %u (%x)\n", board.num_pmics, board.num_pmics);
 		}
 
 		/* HLOS subtype
@@ -297,12 +310,15 @@ static void platform_detect(void)
 		 *                               |  bits   |             |  bits   | Detection |
 		 */
 		board.platform_hlos_subtype = (board_get_ddr_subtype() << 8) | (platform_get_boot_dev() << 16) | (platform_detect_panel() << 11);
+		dprintf(SPEW, " platform_hlos_subtype: %u (%x)\n", board.platform_hlos_subtype, board.platform_hlos_subtype);
 	}
 	else
 	{
 		dprintf(CRITICAL, "Unsupported board info format %u.%u\n", format_major, format_minor);
 		ASSERT(0);
 	}
+
+	dputs(SPEW, "board: platform_detect() done\n\n");
 }
 
 void pmic_info_populate(void)
@@ -499,10 +515,10 @@ uint32_t board_get_ddr_subtype(void)
 	{
 	case DDR_512MB:
 		ret = SUBTYPE_512MB;
-	break;
+		break;
 	default:
 		ret = 0;
-	break;
+		break;
 	};
 
 	return ret;

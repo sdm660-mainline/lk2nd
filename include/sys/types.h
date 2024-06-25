@@ -37,9 +37,16 @@ typedef unsigned short u_short;
 typedef unsigned int u_int;
 typedef unsigned long u_long;
 
+#ifdef __clang__
+#if !defined(_SIZE_T)
+typedef unsigned int size_t;
+#define _SIZE_T
+#endif
+#else /* gcc? */
 #ifndef _SIZE_T_DEFINED_
 typedef unsigned long size_t;
 #endif
+#endif /* __clang__ */
 typedef long          ssize_t;
 typedef long long     off_t;
 
