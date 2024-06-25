@@ -676,6 +676,43 @@ DEFINES += DISPLAY_TYPE_MDSS=1
 			$(LOCAL_DIR)/mipi_dsi_autopll_thulium.o
 endif
 
+ifeq ($(PLATFORM),sdm660)
+DEFINES += DISPLAY_TYPE_MDSS=1
+	OBJS += $(LOCAL_DIR)/qtimer.o \
+			$(LOCAL_DIR)/qtimer_mmap.o \
+			$(LOCAL_DIR)/interrupts.o \
+			$(LOCAL_DIR)/clock.o \
+			$(LOCAL_DIR)/clock_pll.o \
+			$(LOCAL_DIR)/clock_alpha_pll.o \
+			$(LOCAL_DIR)/clock_lib2.o \
+			$(LOCAL_DIR)/uart_dm.o \
+			$(LOCAL_DIR)/board.o \
+			$(LOCAL_DIR)/spmi.o \
+			$(LOCAL_DIR)/bam.o \
+			$(LOCAL_DIR)/dev_tree.o \
+			$(LOCAL_DIR)/gpio.o \
+			$(LOCAL_DIR)/scm.o \
+			$(LOCAL_DIR)/qseecom_lk.o \
+			$(LOCAL_DIR)/qmp_usb30_phy.o \
+			$(LOCAL_DIR)/qusb2_phy.o \
+			$(LOCAL_DIR)/certificate.o \
+			$(LOCAL_DIR)/image_verify.o \
+			$(LOCAL_DIR)/crypto_hash.o \
+			$(LOCAL_DIR)/crypto5_eng.o \
+			$(LOCAL_DIR)/crypto5_wrapper.o \
+			$(LOCAL_DIR)/mdp5.o \
+			$(LOCAL_DIR)/display.o \
+			$(LOCAL_DIR)/mipi_dsi.o \
+			$(LOCAL_DIR)/mipi_dsc.o \
+			$(LOCAL_DIR)/mipi_dsi_phy.o \
+			$(LOCAL_DIR)/mipi_dsi_autopll_thulium.o \
+			$(LOCAL_DIR)/shutdown_detect.o \
+			$(LOCAL_DIR)/i2c_qup.o \
+			$(LOCAL_DIR)/mipi_dsi_i2c.o \
+			$(LOCAL_DIR)/mdss_hdmi.o \
+			$(LOCAL_DIR)/mdss_hdmi_pll_8996.o
+endif
+
 ifneq ($(filter DEVICE_TREE=1, $(DEFINES)),)
 # Add dev_tree.o if it is not already there
 OBJS += $(if $(filter $(LOCAL_DIR)/dev_tree.o,$(OBJS)),,$(LOCAL_DIR)/dev_tree.o)
