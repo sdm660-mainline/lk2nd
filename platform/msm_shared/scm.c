@@ -115,10 +115,12 @@ void scm_init(void)
 {
 	int ret;
 
+	dprintf(SPEW, "scm_init(): start, scm_initialized: %s\n", scm_initialized ? "true" : "false");
 	if (scm_initialized)
 		return;
 
 	ret = scm_arm_support_available(SCM_SVC_INFO, IS_CALL_AVAIL_CMD);
+	dprintf(SPEW, "scm_init(): scm_arm_support_available ret = %d\n", ret);
 
 	if (ret < 0)
 		dprintf(CRITICAL, "Failed to initialize SCM\n");
@@ -1140,13 +1142,13 @@ int scm_random(uintptr_t * rbuf, uint32_t  r_len)
 uintptr_t get_canary(void)
 {
 	uintptr_t canary;
-	if(scm_random(&canary, sizeof(canary))) {
-		dprintf(CRITICAL,"scm_call for random failed !!!");
-		/*
-		* fall back to use lib rand API if scm call failed.
-		*/
-		canary =  rand();
-	}
+	// if(scm_random(&canary, sizeof(canary))) {
+	// 	dprintf(CRITICAL,"scm_call for random failed !!!");
+	// 	/*
+	// 	* fall back to use lib rand API if scm call failed.
+	// 	*/
+	 	canary =  rand();
+	// }
 
 	return canary;
 }

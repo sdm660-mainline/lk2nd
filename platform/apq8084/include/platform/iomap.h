@@ -29,7 +29,8 @@
 #ifndef _PLATFORM_APQ8084_IOMAP_H_
 #define _PLATFORM_APQ8084_IOMAP_H_
 
-#define MSM_SHARED_BASE             0x0FA00000
+#define MSM_SHARED_BASE             0x0FA00000 /* aka SMEM_REGION_BASE */
+#define MSM_SMEM_REGION_SIZE        0x200000
 
 #define SYSTEM_IMEM_BASE            0xFE800000
 

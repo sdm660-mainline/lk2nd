@@ -384,12 +384,12 @@ void uart_dm_init(uint8_t id, uint32_t gsbi_base, uint32_t uart_dm_base)
 	char *data = "Android Bootloader - UART_DM Initialized!!!\n";
 
 	/* Configure the uart clock */
-	clock_config_uart_dm(id);
+	//clock_config_uart_dm(id);
 	dsb();
 
 	/* Configure GPIO to provide connectivity between UART block
 	   product ports and chip pads */
-	gpio_config_uart_dm(id);
+	//gpio_config_uart_dm(id);
 	dsb();
 
 	/* Configure GSBI for UART_DM protocol.
@@ -405,13 +405,14 @@ void uart_dm_init(uint8_t id, uint32_t gsbi_base, uint32_t uart_dm_base)
 	/* Configure clock selection register for tx and rx rates.
 	 * Selecting 115.2k for both RX and TX.
 	 */
-	writel(UART_DM_CLK_RX_TX_BIT_RATE, MSM_BOOT_UART_DM_CSR(uart_dm_base));
+	//writel(UART_DM_CLK_RX_TX_BIT_RATE, MSM_BOOT_UART_DM_CSR(uart_dm_base));
 	dsb();
 
 	/* Intialize UART_DM */
-	msm_boot_uart_dm_init(uart_dm_base);
+	//msm_boot_uart_dm_init(uart_dm_base);
 
 	msm_boot_uart_dm_write(uart_dm_base, data, 44);
+	return;
 
 	ASSERT(port < ARRAY_SIZE(port_lookup));
 	port_lookup[port++] = uart_dm_base;
@@ -428,6 +429,18 @@ void uart_dm_init(uint8_t id, uint32_t gsbi_base, uint32_t uart_dm_base)
 int uart_putc(int port, char c)
 {
 	uint32_t uart_base = port_lookup[port];
+
+#ifdef WITH_UART_DM_EARLY
+#ifndef UARTM_DM_EARLY_BASE
+#error You must define UARTM_DM_EARLY_BASE address together with WITH_UART_DM_EARLY!
+#endif
+	/* To prevent duplicate prints over uart, only do early output if
+	   full uart was not initialized */
+	if (!uart_init_flag) {
+		msm_boot_uart_dm_write(UARTM_DM_EARLY_BASE, &c, 1);
+		return 0;
+	}
+#endif
 
 	/* Don't do anything if UART is not initialized */
 	if (!uart_init_flag)

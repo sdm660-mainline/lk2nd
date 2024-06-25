@@ -137,7 +137,7 @@ inline __ALWAYS_INLINE uint64_t qtimer_get_phy_timer_cnt(void)
 		phy_cnt_hi_1 = readl(QTMR_V1_CNTPCT_HI);
 		phy_cnt_lo = readl(QTMR_V1_CNTPCT_LO);
 		phy_cnt_hi_2 = readl(QTMR_V1_CNTPCT_HI);
-    } while (phy_cnt_hi_1 != phy_cnt_hi_2);
+	} while (phy_cnt_hi_1 != phy_cnt_hi_2);
 
 	return ((uint64_t)phy_cnt_hi_1 << 32) | phy_cnt_lo;
 }

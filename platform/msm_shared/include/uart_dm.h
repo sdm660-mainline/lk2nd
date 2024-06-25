@@ -263,7 +263,6 @@ enum MSM_BOOT_UART_DM_BITS_PER_CHAR {
 #define MSM_BOOT_UART_DM_E_MALLOC_FAIL       4
 #define MSM_BOOT_UART_DM_E_RX_NOT_READY      5
 
-void uart_dm_init(uint8_t id,
-				  uint32_t gsbi_base,
-				  uint32_t uart_dm_base);
+void uart_dm_init(uint8_t id, uint32_t gsbi_base, uint32_t uart_dm_base);
+
 #endif				/* __UART_DM_H__ */

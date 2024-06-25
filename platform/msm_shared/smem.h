@@ -41,6 +41,18 @@
 #define SMEM_V11_SMEM_MAX_PMIC_DEVICES  4 // this is the max that device tree currently supports
 #define SMEM_MAX_PMIC_DEVICES           SMEM_V11_SMEM_MAX_PMIC_DEVICES
 
+/*
+ * The version member of the smem header contains an array of versions for the
+ * various software components in the SoC.
+ * Version 12 (SMEM_GLOBAL_PART_VERSION) changes the item alloc/get procedure
+ * for the global heap. A new global partition is created from the global heap
+ * region with partition type (SMEM_GLOBAL_HOST) and the max smem item count is
+ * set by the bootloader.
+ */
+#define SMEM_MASTER_SBL_VERSION_INDEX	7
+#define SMEM_GLOBAL_HEAP_VERSION	11
+#define SMEM_GLOBAL_PART_VERSION	12
+
 #define SMEM_RAM_PTABLE_VERSION_OFFSET  8
 
 #define RAM_PART_NAME_LENGTH            16
@@ -67,6 +79,13 @@ struct smem_proc_comm {
 	unsigned data2;
 };
 
+/**
+ * struct smem_heap_info - information about smem heap
+ * @initialized:	boolean to indicate that smem is initialized
+ * @free_offset:	index of the first unallocated byte in smem
+ * @heap_remaining:	number of bytes available for allocation
+ * @reserved:		reserved field, must be 0
+ */
 struct smem_heap_info {
 	unsigned initialized;
 	unsigned free_offset;
@@ -74,12 +93,21 @@ struct smem_heap_info {
 	unsigned reserved;
 };
 
-struct smem_alloc_info {
+/**
+ * struct smem_alloc_info - entry to reference smem items on the heap
+ * @allocated:	boolean to indicate if this entry is used
+ * @offset:	offset to the allocated space
+ * @size:	size of the allocated space, 8 byte aligned
+ * @base_ext:	base address for the memory region used by this unit, or 0 for
+ *		the default region. bits 0,1 are reserved
+ */
+struct smem_alloc_info {    /* also named smem_global_entry in linux driver */
 	unsigned allocated;
 	unsigned offset;
 	unsigned size;
-	unsigned base_ext;
+	unsigned base_ext; /* bits 1:0 reserved, named aux_base in linux driver */
 };
+#define BASE_EXT_MASK	0xfffffffc
 
 struct smem_board_info_v2 {
 	unsigned format;
@@ -610,11 +638,25 @@ enum {
 	APPS_MEMORY,		/* apps  usage memory */
 };
 
+#define SMEM_ITEM_COUNT 512
+#define SMEM_HOST_APPS		0
+/* Processor/host identifier for the global partition */
+#define SMEM_GLOBAL_HOST	0xfffe
+/* Max number of processors/hosts in a system */
+#define SMEM_HOST_COUNT		20
+
+/**
+ * struct smem - header found in beginning of primary smem region
+ * @proc_comm:		proc_comm communication interface (legacy)
+ * @version_info:	array of versions for the various subsystems
+ * @heap_info:		information about smem heap
+ * @alloc_info:		array of references to items
+ */
 struct smem {
 	struct smem_proc_comm proc_comm[4];
 	unsigned version_info[32];
 	struct smem_heap_info heap_info;
-	struct smem_alloc_info alloc_info[SMEM_MAX_SIZE];
+	struct smem_alloc_info alloc_info[SMEM_ITEM_COUNT];
 };
 
 struct smem_ram_ptn {
@@ -658,6 +700,95 @@ struct smem_ram_ptn_v2 {
 	uint64_t reserved;      /* Reserved for future use */
 	uint64_t available_length; /* Available partition length in RAM in bytes */
 } __attribute__ ((__packed__));
+
+/**
+ * struct smem_ptable_entry - one entry in the @smem_ptable list
+ * @offset:	offset, within the main shared memory region, of the partition
+ * @size:	size of the partition
+ * @flags:	flags for the partition (currently unused)
+ * @host0:	first processor/host with access to this partition
+ * @host1:	second processor/host with access to this partition
+ * @cacheline:	alignment for "cached" entries
+ * @reserved:	reserved entries for later use
+ */
+struct smem_ptable_entry_v12 {
+	uint32_t offset;
+	uint32_t size;
+	uint32_t flags;
+	uint16_t host0;
+	uint16_t host1;
+	uint32_t cacheline;
+	uint32_t reserved[7];
+};
+
+/**
+ * struct smem_partition_header - header of the partitions
+ * @magic:	magic number, must be SMEM_PART_MAGIC
+ * @host0:	first processor/host with access to this partition
+ * @host1:	second processor/host with access to this partition
+ * @size:	size of the partition
+ * @offset_free_uncached: offset to the first free byte of uncached memory in
+ *		this partition
+ * @offset_free_cached: offset to the first free byte of cached memory in this
+ *		partition
+ * @reserved:	for now reserved entries
+ */
+struct smem_partition_header {
+	uint8_t magic[4];
+	uint16_t host0;
+	uint16_t host1;
+	uint32_t size;
+	uint32_t offset_free_uncached;
+	uint32_t offset_free_cached;
+	uint32_t reserved[3];
+};
+
+/**
+ * struct smem_ptable - partition table for the private partitions
+ * @magic:	magic number, must be SMEM_PTABLE_MAGIC
+ * @version:	version of the partition table
+ * @num_entries: number of partitions in the table
+ * @reserved:	for now reserved entries
+ * @entry:	list of @smem_ptable_entry for the @num_entries partitions
+ */
+struct smem_ptable_v12 {
+	uint8_t  magic[4];
+	uint32_t version;
+	uint32_t num_entries;
+	uint32_t reserved[5];
+	struct smem_ptable_entry_v12 entry[];
+};
+
+/**
+ * struct smem_private_entry - header of each item in the private partition
+ * @canary:	magic number, must be SMEM_PRIVATE_CANARY
+ * @item:	identifying number of the smem item
+ * @size:	size of the data, including padding bytes
+ * @padding_data: number of bytes of padding of data
+ * @padding_hdr: number of bytes of padding between the header and the data
+ * @reserved:	for now reserved entry
+ */
+struct smem_private_entry {
+	uint16_t canary; /* bytes are the same so no swapping needed */
+	uint16_t item;
+	uint32_t size; /* includes padding bytes */
+	uint16_t padding_data;
+	uint16_t padding_hdr;
+	uint32_t reserved;
+};
+#define SMEM_PRIVATE_CANARY	0xa5a5
+
+/**
+ * struct smem_partition - describes smem partition
+ * @phys_base:	starting physical address of partition
+ * @cacheline:	alignment for "cached" entries
+ * @size:	size of partition
+ */
+struct smem_partition_desc {
+	addr_t phys_base;
+	size_t cacheline;
+	size_t size;
+};
 
 struct smem_ram_ptable {
 	unsigned magic[2];
@@ -736,6 +867,9 @@ static inline boolean smem_ram_ptn_is_ddr(const ram_partition *ptn_entry)
 	}
 }
 
+uint32_t smem_get_sbl_version(void);
+struct smem_ptable_v12 *smem_get_ptable_v12(void);
+void smem_setup_global_partition(void);
 unsigned smem_read_alloc_entry_offset(smem_mem_type_t type, void *buf, int len, int offset);
 int smem_ram_ptable_init(struct smem_ram_ptable *smem_ram_ptable);
 int smem_ram_ptable_init_v1(void); /* Used on platforms that use ram ptable v1 */
@@ -747,4 +881,7 @@ void *smem_alloc_entry(smem_mem_type_t type, uint32_t size);
 uint32_t get_ddr_start(void);
 uint64_t smem_get_ddr_size(void);
 size_t smem_get_hw_platform_name(void *buf, uint32 buf_size);
+
+void *smem_get_private_item(struct smem_partition_desc *part, unsigned item, size_t *size);
+
 #endif				/* __PLATFORM_MSM_SHARED_SMEM_H */

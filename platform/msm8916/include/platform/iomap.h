@@ -42,7 +42,8 @@
 #define BS_INFO_ADDR                (MSM_SHARED_IMEM_BASE + BS_INFO_OFFSET)
 #define SDRAM_START_ADDR            0x80000000
 
-#define MSM_SHARED_BASE             0x86300000
+#define MSM_SHARED_BASE             0x86300000 /* aka SMEM_REGION_BASE */
+#define MSM_SMEM_REGION_SIZE        0x100000
 #define APPS_SS_BASE                0x0B000000
 
 #define DDR_START                   get_ddr_start()

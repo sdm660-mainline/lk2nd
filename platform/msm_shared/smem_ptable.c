@@ -248,10 +248,29 @@ int smem_ram_ptable_init_v1(void)
 	uint32_t version;
 	uint32_t smem_ram_ptable_size = 0;
 	struct smem_ram_ptable_hdr *ram_ptable_hdr;
+	uint32_t sbl_ver;
 
 	/* Already initialized? */
 	if (ptable.hdr.magic[0])
 		return 1;
+
+	/* Check smem version */
+	sbl_ver = smem_get_sbl_version();
+	switch (sbl_ver >> 16)
+	{
+	case SMEM_GLOBAL_PART_VERSION:
+		smem_setup_global_partition();
+		//smem->item_count = qcom_smem_get_item_count(smem);
+		break;
+	case SMEM_GLOBAL_HEAP_VERSION:
+		//qcom_smem_map_global(smem, size);
+		//smem->item_count = SMEM_ITEM_COUNT;
+		break;
+	default:
+		dprintf(CRITICAL, "Unsupported SMEM version 0x%x\n", (sbl_ver >> 16));
+		ASSERT(0);
+	}
+	dprintf(INFO, "SMEM version: 0x%x\n", (sbl_ver >> 16));
 
 	/* Check smem ram partition table version and decide on length of ram_ptable */
 	ret = smem_read_alloc_entry_offset(SMEM_USABLE_RAM_PARTITION_TABLE,
@@ -259,8 +278,10 @@ int smem_ram_ptable_init_v1(void)
 						sizeof(version),
 						SMEM_RAM_PTABLE_VERSION_OFFSET);
 
-	if(ret)
+	if(ret) {
+		dprintf(CRITICAL, "smem_ram_ptable_init_v1: failed to read SMEM_USABLE_RAM_PARTITION_TABLE\n");
 		return 0;
+	}
 
 	if(version == SMEM_RAM_PTABLE_VERSION_2)
 		smem_ram_ptable_size = sizeof(struct smem_ram_ptable_v2);
@@ -277,14 +298,18 @@ int smem_ram_ptable_init_v1(void)
 	i = smem_read_alloc_entry(SMEM_USABLE_RAM_PARTITION_TABLE,
 				  (void*)buffer,
 				  smem_ram_ptable_size);
-	if (i != 0)
+	if (i != 0) {
+		dprintf(CRITICAL, "smem_ram_ptable_init_v1: failed to read %u bytes\n", smem_ram_ptable_size);
 		return 0;
+	}
 
 	ram_ptable_hdr = (struct smem_ram_ptable_hdr *)buffer;
 
 	if (ram_ptable_hdr->magic[0] != _SMEM_RAM_PTABLE_MAGIC_1 ||
-	    ram_ptable_hdr->magic[1] != _SMEM_RAM_PTABLE_MAGIC_2)
+	    ram_ptable_hdr->magic[1] != _SMEM_RAM_PTABLE_MAGIC_2) {
+		dprintf(CRITICAL, "smem_ram_ptable_init_v1: invalid RAM ptable magic!\n");
 		return 0;
+	}
 
 	smem_copy_ram_ptable((void*)buffer);
 
