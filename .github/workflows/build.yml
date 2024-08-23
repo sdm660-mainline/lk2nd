@@ -28,6 +28,7 @@ jobs:
     uses: ./.github/workflows/lk2nd-matrix.yml
     with:
       project: lk1st
+      exclude: sdm660  # Does not support lk1st build
       artifacts: |
         build-*/*.mbn
         build-*/lk.bin
